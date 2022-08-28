@@ -27,13 +27,6 @@ def main():
     sender = Account(pem_file=args.sender)
     sender.sync_nonce(proxy=proxy)
 
-    # proxy = ElrondProxy("https://devnet-gateway.elrond.com")
-    # network = proxy.get_network_config()
-    # # receiver = Address("erd1yqv7q0khhrlxc8w0q8cv85ddlur8wdsu5q39kazpkhmyrdmnrzyqkkkqzg")
-    # receiver = Address("erd1u64t98v0n4d8ayx6r9nmwrpzvxezyzyz5ewn80ulhhuj02x9ragqp6ffa2")
-    # sender = Account(pem_file="wallet.pem")
-    # sender.sync_nonce(proxy=proxy)
-
     transactions: BunchOfTransactions = BunchOfTransactions()
     esdts = helper.get_esdt(sender.address,network.chain_id)
     for ticker in esdts:
@@ -62,19 +55,22 @@ def main():
     num, hashes = transactions.send(proxy)
     
     #process new tx for the egld amount
-    transaction = Transaction()
-    transaction.chainID = network.chain_id
-    transaction.nonce = sender.nonce
-    transaction.version = network.min_tx_version
-    transaction.gasPrice = network.min_gas_price
-    transaction.value = str(int(helper.get_egld_balance(sender.address,network.chain_id))-50000000000000000)
-    transaction.sender = sender.address.bech32()
-    transaction.receiver=receiver.bech32()
-    transaction.gasLimit = 50000
-    transaction.sign(sender)
+    egld_amount = int(helper.get_egld_balance(sender.address,network.chain_id))
+    keep_for_gas = 50000000000000000 #keep 0.05 egld for the gas
+    if egld_amount<keep_for_gas:
+      transaction = Transaction()
+      transaction.chainID = network.chain_id
+      transaction.nonce = sender.nonce
+      transaction.version = network.min_tx_version
+      transaction.gasPrice = network.min_gas_price
+      transaction.value = str(egld_amount-keep_for_gas)
+      transaction.sender = sender.address.bech32()
+      transaction.receiver=receiver.bech32()
+      transaction.gasLimit = 50000
+      transaction.sign(sender)
     
-    num+=1
-    hashes[len(hashes)+1]= transaction.send(proxy)
+      num+=1
+      hashes[len(hashes)+1]= transaction.send(proxy)
     print(f"Sent {num} transactions:")
     print(hashes)
 
