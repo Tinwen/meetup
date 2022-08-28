@@ -29,6 +29,9 @@ def main():
 
     transactions: BunchOfTransactions = BunchOfTransactions()
     esdts = helper.get_esdt(sender.address,network.chain_id)
+    at_least_one = False
+    num = 0
+    hashes = []
     for ticker in esdts:
       transaction = Transaction()
       transaction.chainID = network.chain_id
@@ -51,13 +54,15 @@ def main():
       
       sender.nonce+=1
       transactions.add_prepared(transaction)
-    
-    num, hashes = transactions.send(proxy)
+      at_least_one = True
+
+    if at_least_one: 
+      num, hashes = transactions.send(proxy)
     
     #process new tx for the egld amount
     egld_amount = int(helper.get_egld_balance(sender.address,network.chain_id))
     keep_for_gas = 50000000000000000 #keep 0.05 egld for the gas
-    if egld_amount<keep_for_gas:
+    if egld_amount>keep_for_gas:
       transaction = Transaction()
       transaction.chainID = network.chain_id
       transaction.nonce = sender.nonce
