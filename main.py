@@ -8,8 +8,7 @@ from erdpy.transactions import Transaction, BunchOfTransactions
 import helper
 
 def main():
-    #python3 main.py --receiver=erd1yqv7q0khhrlxc8w0q8cv85ddlur8wdsu5q39kazpkhmyrdmnrzyqkkkqzg --sender=wallet2.pem
-    #python3 main.py --receiver=erd1u64t98v0n4d8ayx6r9nmwrpzvxezyzyz5ewn80ulhhuj02x9ragqp6ffa2 --sender=wallet.pem
+    #python3 main.py --receiver=erd1snukhz9375qdjejsryxm3lqlh5r0hm7dvrez6cmqt08rznsf5h0sn290k5 --sender=wallet3.pem --proxy=mainnet
     logging.basicConfig(level=logging.ERROR)
     parser = ArgumentParser()
     parser.add_argument("--receiver", help="receiver address", required=True)
@@ -30,7 +29,6 @@ def main():
     transactions: BunchOfTransactions = BunchOfTransactions()
     esdts = helper.get_esdt(sender.address,network.chain_id)
     at_least_one = False
-    num = 0
     hashes = []
     for ticker in esdts:
       transaction = Transaction()
@@ -57,28 +55,31 @@ def main():
       at_least_one = True
 
     if at_least_one: 
-      num, hashes = transactions.send(proxy)
+      _, hashes = transactions.send(proxy)
+      print(f"Sent {len(hashes)} esdt transactions:\n{hashes}")
     
     #process new tx for the egld amount
     egld_amount = int(helper.get_egld_balance(sender.address,network.chain_id))
     keep_for_gas = 50000000000000000 #keep 0.05 egld for the gas
+    hashes_two = []
     if egld_amount>keep_for_gas:
       transaction = Transaction()
       transaction.chainID = network.chain_id
       transaction.nonce = sender.nonce
       transaction.version = network.min_tx_version
-      transaction.gasPrice = network.min_gas_price
+      transaction.gasPrice = 500000000
       transaction.value = str(egld_amount-keep_for_gas)
       transaction.sender = sender.address.bech32()
       transaction.receiver=receiver.bech32()
       transaction.gasLimit = 50000
       transaction.sign(sender)
     
-      num+=1
-      hashes[len(hashes)+1]= transaction.send(proxy)
-    print(f"Sent {num} transactions:")
-    print(hashes)
+      hashes_two = transaction.send(proxy)
+      print(f"Sent {len(hashes_two)} egld transactions:\n{hashes_two}")
+
+    print("Main finished")
 
 
 if __name__ == "__main__":
+  while True:
     main()
